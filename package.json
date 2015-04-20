@@ -2,6 +2,10 @@
   "name": "worldpop-data",
   "version": "1.0.0",
   "description": "Data processing pipeline for the worldpop project.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/developmentseed/worldpop-data.git"
+  },
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
