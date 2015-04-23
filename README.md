@@ -22,3 +22,10 @@ scripts/merge.sh shapes temp/density.shp
 
 scripts/tiles.js temp/density.shp tiles.worldpop.mbtiles worldpop
 ```
+
+**NOTE:** The `vectorize` loop above assumes that all of the tif files have
+data in the same units - ideally, people per hectare.  However, for some
+countries, the older WorldPop datasets that are available only have people per
+*pixel*.  My suggestion is to assess the size of a pixel in those cases, and
+then change the second parameter to `vectorize.sh` (`1` above) to the
+appropriate scale factor.
