@@ -17,7 +17,8 @@
     </Rule>
   </Style>
   <% } %>
-  <Layer name="<%= l.layer %>" buffer-size="0" srs="<%= projection %>">
+  <Layer name="<%= l.layer %>" buffer-size="0" srs="<%= projection %>"
+    minzoom="<%= l.minzoom %>" maxzoom="<%= l.maxzoom %>">
     <% if (l.type === 'gdal') { %><StyleName><%= l.layer %></StyleName><% } %>
     <Datasource>
       <Parameter name="type"><%= l.type %></Parameter>
