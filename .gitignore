@@ -1,4 +1,7 @@
 env
-temp
 node_modules
+temp
+data
+shapes
+tiles
 

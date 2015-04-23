@@ -6,7 +6,6 @@ FACTOR=$2
 BASE=`basename $1 .tif`
 SCALED=${BASE}.x${FACTOR}.tif
 POLY=${BASE}.x${FACTOR}.shp
-TILES=${BASE}.mbtiles
 
 PROPERTY=$3
 OUTPUT=$4
@@ -24,11 +23,11 @@ gdal_calc.py -A $INPUT --NoDataValue=0 --type=Float64 --calc="A * $FACTOR" --out
 
 # Polygonize
 echo "Polygonizing."
-gdal_polygonize.py -mask temp/$SCALED temp/$SCALED -f "ESRI Shapefile" temp/$POLY $PROPERTY $PROPERTY
+gdal_polygonize.py -mask temp/$SCALED temp/$SCALED -f "ESRI Shapefile" $OUTPUT/$POLY $PROPERTY $PROPERTY
 
 # Convert to vector tiles.
-echo "Generating vector tiles at $OUTPUT/$TILES."
-`dirname $0`/tiles.js temp/$POLY $OUTPUT/$TILES
+# echo "Generating vector tiles at $OUTPUT/$TILES."
+# `dirname $0`/tiles.js temp/$POLY $OUTPUT/$TILES $PROPERTY
 
 echo "Finished."
 # TODO:

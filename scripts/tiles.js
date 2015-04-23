@@ -18,13 +18,14 @@ var MIN_ZOOM = 8
 var MAX_ZOOM = 12
 var xml = fs.readFileSync(path.join(__dirname, 'template.xml'), 'utf8')
 
-if (process.argv.length < 4) {
-  console.log('Usage: ', process.argv[0], process.argv[1], ' source.shp dest.mbtiles')
+if (process.argv.length < 5) {
+  console.log('Usage: ', process.argv[0], process.argv[1], ' source.shp dest.mbtiles layername')
   process.exit()
 }
 
 var srcFile = path.resolve(process.argv[2])
 var dsturi = 'mbtiles://' + path.resolve(process.cwd(), process.argv[3])
+var layer = process.argv[4]
 
 getMetadata(srcFile, function (err, metadata) {
   if (err) throw err
@@ -35,11 +36,13 @@ getMetadata(srcFile, function (err, metadata) {
   metadata.format = metadata.dstype === 'gdal' ? 'webp' : 'pbf'
   metadata.layers = metadata.layers.map(function (name) {
     return {
-      layer: name,
+      layer: layer,
       type: metadata.dstype,
       file: metadata.filepath
     }
   })
+
+  metadata.json.vector_layers[0].id = layer
 
   metadata.minzoom = Math.max(metadata.minzoom, MIN_ZOOM)
   metadata.maxzoom = Math.min(metadata.maxzoom, MAX_ZOOM)
@@ -51,6 +54,8 @@ getMetadata(srcFile, function (err, metadata) {
     if (process.argv[process.argv.length - 1] === 'info') {
       source.getInfo(function (err, info) {
         console.log(err, info)
+        console.log(JSON.stringify(metadata.json))
+        console.log(mapnikXml)
         process.exit()
       })
     } else {
