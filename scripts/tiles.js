@@ -27,6 +27,13 @@ var srcFile = path.resolve(process.argv[2])
 var dsturi = 'mbtiles://' + path.resolve(process.cwd(), process.argv[3])
 var layer = process.argv[4]
 
+var indexFile = path.resolve(path.dirname(srcFile), path.basename(srcFile, '.shp') + '.index')
+
+if (!fs.existsSync(indexFile)) {
+  console.log('WARNING: no index found at ',indexFile,' - running shapeindex will likely speed things up a LOT!.')
+  console.log('mapnik-shapeindex.js -d 12 ' + srcFile)
+}
+
 getMetadata(srcFile, function (err, metadata) {
   if (err) throw err
 
