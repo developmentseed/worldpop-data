@@ -14,18 +14,18 @@ var _ = require('lodash')
 var getMetadata = require('mapnik-omnivore').digest
 require('mbtiles').registerProtocols(tilelive)
 
-var MIN_ZOOM = 8
-var MAX_ZOOM = 12
 var xml = fs.readFileSync(path.join(__dirname, 'template.xml'), 'utf8')
 
 if (process.argv.length < 5) {
-  console.log('Usage: ', process.argv[0], process.argv[1], ' source.shp dest.mbtiles layername')
+  console.log('Usage: ', process.argv[0], process.argv[1], ' source.shp dest.mbtiles layername [minzoom] [maxzoom]')
   process.exit()
 }
 
 var srcFile = path.resolve(process.argv[2])
 var dsturi = 'mbtiles://' + path.resolve(process.cwd(), process.argv[3])
 var layer = process.argv[4]
+var MIN_ZOOM = +(process.argv[5] || 8)
+var MAX_ZOOM = +(process.argv[6] || 12)
 
 var indexFile = path.resolve(path.dirname(srcFile), path.basename(srcFile, '.shp') + '.index')
 

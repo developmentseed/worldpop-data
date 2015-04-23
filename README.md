@@ -24,6 +24,7 @@ scripts/merge.sh shapes/coverage temp/coverage.shp
 mapnik-shapeindex.js -d 12 temp/population.shp
 
 scripts/tiles.js temp/population.shp tiles/population.mbtiles population
+scripts/tiles.js temp/coverage.shp tiles/coverage.mbtiles coverage 0 22
 ```
 
 **NOTE:** The `vectorize` loop above assumes that all of the tif files have
