@@ -13,9 +13,11 @@ do
   if [ -f "$OUTPUT" ]
   then
     echo "Merging $i into $OUTPUT"
-    ogr2ogr -f 'ESRI Shapefile' -update -append $OUTPUT $i
+    ogr2ogr -f 'ESRI Shapefile' -t_srs EPSG:4326 -update -append $OUTPUT $i -nln `basename $OUTPUT .shp`
   else
     echo "Copying $i as $OUTPUT"
-    ogr2ogr -f 'ESRI Shapefile' $OUTPUT $i
+    ogr2ogr -f 'ESRI Shapefile' -t_srs EPSG:4326 $OUTPUT $i
   fi
 done
+
+
