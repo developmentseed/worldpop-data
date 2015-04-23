@@ -18,9 +18,12 @@ mkdir tiles
 
 for i in $(ls data/*.tif) ; do scripts/vectorize.sh $i 1 worldpop shapes ; done
 
-scripts/merge.sh shapes temp/density.shp
+scripts/merge.sh shapes temp/population.shp
+scripts/merge.sh shapes/coverage temp/coverage.shp
 
-scripts/tiles.js temp/density.shp tiles.worldpop.mbtiles worldpop
+mapnik-shapeindex.js -d 12 temp/population.shp
+
+scripts/tiles.js temp/population.shp tiles/population.mbtiles population
 ```
 
 **NOTE:** The `vectorize` loop above assumes that all of the tif files have
