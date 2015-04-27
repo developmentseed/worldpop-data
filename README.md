@@ -33,3 +33,9 @@ countries, the older WorldPop datasets that are available only have people per
 *pixel*.  My suggestion is to assess the size of a pixel in those cases, and
 then change the second parameter to `vectorize.sh` (`1` above) to the
 appropriate scale factor.
+
+Alternatively, you can do this in one fell swoop with:
+
+```bash
+scripts/run.sh directory_with_tiffs
+```
