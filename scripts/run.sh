@@ -3,7 +3,7 @@
 mkdir -p shapes
 mkdir -p tiles
 
-for i in $(ls $1/*.tif) ; do scripts/vectorize.sh $i 1 worldpop shapes ; done
+for i in "$@" ; do scripts/vectorize.sh $i 1 density shapes ; done
 
 scripts/merge.sh shapes shapes/population.shp
 scripts/merge.sh shapes/coverage shapes/coverage.shp

@@ -61,7 +61,7 @@ getMetadata(srcFile, function (err, metadata) {
     if (process.argv[process.argv.length - 1] === 'info') {
       source.getInfo(function (err, info) {
         console.log(err, info)
-        console.log(JSON.stringify(metadata.json))
+        console.log(JSON.stringify(metadata))
         console.log(mapnikXml)
         process.exit()
       })

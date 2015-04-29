@@ -16,7 +16,7 @@ mkdir temp
 mkdir shapes
 mkdir tiles
 
-for i in $(ls data/*.tif) ; do scripts/vectorize.sh $i 1 worldpop shapes ; done
+for i in $(ls data/*.tif) ; do scripts/vectorize.sh $i 1 density shapes ; done
 
 scripts/merge.sh shapes temp/population.shp
 scripts/merge.sh shapes/coverage temp/coverage.shp
@@ -37,5 +37,5 @@ appropriate scale factor.
 Alternatively, you can do this in one fell swoop with:
 
 ```bash
-scripts/run.sh directory_with_tiffs
+scripts/run.sh your_data/*.tif
 ```
