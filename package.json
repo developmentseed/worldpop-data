@@ -18,6 +18,6 @@
     "mbtiles": "^0.7.9",
     "multimeter": "^0.1.1",
     "tilelive": "^5.6.2",
-    "tilelive-bridge": "^1.2.7",
+    "tilelive-bridge": "^1.2.7"
   }
 }
