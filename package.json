@@ -14,6 +14,7 @@
   "license": "BSD",
   "dependencies": {
     "lodash": "^3.7.0",
+    "mapnik": "^3.2.0",
     "mapnik-omnivore": "^5.0.7",
     "mbtiles": "^0.7.9",
     "multimeter": "^0.1.1",
