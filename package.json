@@ -18,6 +18,10 @@
     "mapnik-omnivore": "^5.0.7",
     "mbtiles": "^0.7.9",
     "multimeter": "^0.1.1",
+    "queue-async": "^1.0.7",
+    "request": "^2.55.0",
+    "split": "^0.3.3",
+    "through2": "^0.6.5",
     "tilelive": "^5.6.2",
     "tilelive-bridge": "^1.2.7"
   }

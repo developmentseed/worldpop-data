@@ -6,6 +6,11 @@ containing polygons of constant population density.
 
 Original data available at [worldpop.org.uk](http://www.worldpop.org.uk/).
 
+## Prerequisites:
+ - GDAL
+ - GNU Parallel
+ - Postgres and PostGIS
+
 ## Workflow:
 
 Assuming you've put the specific TIF (and associated metadata) files you want
@@ -16,15 +21,11 @@ mkdir temp
 mkdir shapes
 mkdir tiles
 
-for i in $(ls data/*.tif) ; do scripts/vectorize.sh $i 1 density shapes ; done
+ls data/*.tif | parallel scripts/vectorize.sh {} 1 density shapes
 
-scripts/merge.sh shapes temp/population.shp
-scripts/merge.sh shapes/coverage temp/coverage.shp
-
-mapnik-shapeindex.js -d 12 temp/population.shp
-
-scripts/tiles.js temp/population.shp tiles/population.mbtiles population
-scripts/tiles.js temp/coverage.shp tiles/coverage.mbtiles coverage 0 22
+scripts/setup-pg.sh
+ls shapes/*.shp | scripts/merge.sh population
+ls shapes/coverage/*.shp | scripts/merge.sh coverage
 ```
 
 **NOTE:** The `vectorize` loop above assumes that all of the tif files have
@@ -39,3 +40,11 @@ Alternatively, you can do this in one fell swoop with:
 ```bash
 scripts/run.sh your_data/*.tif
 ```
+
+## Make Tiles
+
+At this point, the data is in the `worldpop` postgres database.  Open up
+`pg-source.tm2source` in Mapbox Studio, modify the postgres username
+in both the `population` and `coverage` layers, and you should be good to go.
+You can now upload the tiles to Mapbox or export an `mbtiles` file.
+

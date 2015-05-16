@@ -19,7 +19,7 @@ fi
 # ppl/km^2.
 # Also set nodata to 0 so that it'll get filtered out during polygonize.
 echo "Scaling up ratser data x$FACTOR."
-gdal_calc.py -A $INPUT --type=Float64 --calc="A * $FACTOR" --outfile=temp/$SCALED
+gdal_calc.py -A $INPUT --type=Float32 --calc="A * $FACTOR" --outfile=temp/$SCALED
 gdal_calc.py -A $INPUT --type=Int16 --calc="1" --outfile=temp/${BASE}.coverage.tif
 
 # Polygonize
@@ -29,12 +29,8 @@ gdal_polygonize.py temp/$SCALED -f "ESRI Shapefile" $OUTPUT/$POLY $PROPERTY $PRO
 mkdir -p $OUTPUT/coverage
 gdal_polygonize.py temp/${BASE}.coverage.tif -f "ESRI Shapefile" $OUTPUT/coverage/${BASE}.coverage.shp
 
-# Convert to vector tiles.
-# echo "Generating vector tiles at $OUTPUT/$TILES."
-# `dirname $0`/tiles.js temp/$POLY $OUTPUT/$TILES $PROPERTY
+echo "Cleaning up."
+rm temp/$SCALED
+rm temp/${BASE}.coverage.tif
 
 echo "Finished."
-# TODO:
-# Explore using zonal statistics to pull more accurate population value for each polygon
-# from the original raster data.
-
