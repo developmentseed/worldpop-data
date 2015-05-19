@@ -1,14 +1,15 @@
 _prefs: 
-  disabled: []
+  disabled: 
+    - population
   inspector: false
   mapid: ''
   rev: ''
   saveCenter: true
 attribution: ''
 center: 
-  - -27.4219
-  - -8.4072
-  - 2
+  - -73.6084
+  - -51.0966
+  - 5
 description: ''
 Layer: 
   - id: coverage
@@ -27,7 +28,7 @@ Layer:
           WHERE z(!scale_denominator!) in (6,7,8,9,10)
           AND wkb_geometry && !bbox!
           UNION ALL
-          SELECT wkb_geometry FROM coverage_001
+          SELECT wkb_geometry FROM coverage_005
           WHERE z(!scale_denominator!) in (1,2,3,4,5)
           AND wkb_geometry && !bbox!
         ) AS data
@@ -52,6 +53,10 @@ Layer:
       table: |-
         ( SELECT wkb_geometry, density FROM population
           WHERE z(!scale_denominator!) = 11
+          AND wkb_geometry && !bbox!
+         UNION ALL
+          SELECT wkb_geometry, density FROM population_005
+          WHERE z(!scale_denominator!) in (5,6,7,8,9,10)
           AND wkb_geometry && !bbox!
         ) AS data
       type: postgis
