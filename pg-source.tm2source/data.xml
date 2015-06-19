@@ -3,7 +3,7 @@
 <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over">
 
 <Parameters>
-  <Parameter name="center">-73.6084,-51.0966,5</Parameter>
+  <Parameter name="center">-70.8398,-14.094,4</Parameter>
   <Parameter name="format">pbf</Parameter>
   <Parameter name="json"><![CDATA[{"vector_layers":[{"id":"coverage","description":"","fields":{}},{"id":"population","description":"Population density","fields":{"density":"Number"}}]}]]></Parameter>
   <Parameter name="maxzoom">11</Parameter>
@@ -53,13 +53,9 @@
        <Parameter name="max_size"><![CDATA[512]]></Parameter>
        <Parameter name="password"><![CDATA[]]></Parameter>
        <Parameter name="port"><![CDATA[5432]]></Parameter>
-       <Parameter name="table"><![CDATA[( SELECT wkb_geometry, density FROM population
-  WHERE z(!scale_denominator!) = 11
-  AND wkb_geometry && !bbox!
- UNION ALL
-  SELECT wkb_geometry, density FROM population_005
-  WHERE z(!scale_denominator!) in (5,6,7,8,9,10)
-  AND wkb_geometry && !bbox!
+       <Parameter name="table"><![CDATA[(SELECT wkb_geometry, density FROM population
+  WHERE wkb_geometry && !bbox!
+  AND z(!scale_denominator!) = 11
 ) AS data]]></Parameter>
        <Parameter name="type"><![CDATA[postgis]]></Parameter>
        <Parameter name="user"><![CDATA[anand]]></Parameter>

@@ -1,15 +1,14 @@
 _prefs: 
-  disabled: 
-    - population
+  disabled: []
   inspector: false
-  mapid: ''
-  rev: ''
+  mapid: devseed.eff88666
+  rev: s-9991c6cf
   saveCenter: true
 attribution: ''
 center: 
-  - -73.6084
-  - -51.0966
-  - 5
+  - -70.8398
+  - -14.094
+  - 4
 description: ''
 Layer: 
   - id: coverage
@@ -51,13 +50,9 @@ Layer:
       password: ''
       port: 5432
       table: |-
-        ( SELECT wkb_geometry, density FROM population
-          WHERE z(!scale_denominator!) = 11
-          AND wkb_geometry && !bbox!
-         UNION ALL
-          SELECT wkb_geometry, density FROM population_005
-          WHERE z(!scale_denominator!) in (5,6,7,8,9,10)
-          AND wkb_geometry && !bbox!
+        (SELECT wkb_geometry, density FROM population
+          WHERE wkb_geometry && !bbox!
+          AND z(!scale_denominator!) = 11
         ) AS data
       type: postgis
       user: anand
