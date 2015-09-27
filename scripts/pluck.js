@@ -6,20 +6,18 @@ var exec = require('child_process').exec
 
 var files = process.argv.slice(2)
 
-var dryrun = false
-
 dofile()
 
-function dofile (err) {
-  if (err) {
-    console.error(files[0], err)
-  }
-  var file = files.shift()
+var file
+function dofile (err, stdout, stderr) {
+  if (err) { console.error(file, err, stdout, stderr) }
+
+  file = files.shift()
   if (!file) { return }
+
   console.log(path.basename(file))
 
   var code = path.basename(file).split('-')[0]
-
   console.log('\tdownloading')
   exec('aws s3 cp s3://world-pop/' + file + ' .', function (err, stdout, stderr) {
     if (err) { return dofile(err) }
@@ -42,31 +40,32 @@ function dofile (err) {
       }
 
       console.log('\textracting ' + toExtract[0])
+      exec('7z x -bd -y ' + file + ' ' + toExtract[0], upload.bind(null, toExtract[0]))
+    })
+  })
+}
 
-      if (dryrun) return dofile()
+function upload (extracted, err, stdout, stderr) {
+  if (err) {
+    return dofile(err, stdout, stderr)
+  } else {
+    console.log('\tgzipping and uploading ' + extracted)
+    exec('gzip ' + extracted, function (err) {
+      if (err) { return dofile(err) }
+      var ready = extracted + '.gz'
+      exec('aws s3 cp ' + ready + ' s3://world-pop/extracted/', deleteFiles.bind(null, file, ready))
+    })
+  }
+}
 
-      exec('7z x -bd -y ' + file + ' ' + toExtract[0], (err, stdout, stderr) => {
-        if (err) {
-          return dofile(err)
-        } else {
-          console.log('\tuploading ' + toExtract[0])
-          exec('gzip ' + toExtract[0], function (err) {
-            if (err) { dofile(err) }
-            var ready = toExtract[0] + '.gz'
-            exec('aws s3 cp ' + ready + ' s3://world-pop/extracted/', (err, stdout, stderr) => {
-              if (err) { console.error(file, err) }
-              fs.unlink(file, function (err) {
-                if (err) { return dofile(err) }
-                fs.unlink(ready, function (err) {
-                  if (err) { return dofile(err) }
-                  console.log('deleted ' + file + ' and ' + ready)
-                  dofile()
-                })
-              })
-            })
-          })
-        }
-      })
+function deleteFiles (archive, uploaded, err, stdout, stderr) {
+  if (err) { console.error(file, err, stdout, stderr) }
+  fs.unlink(archive, function (err) {
+    if (err) { return dofile(err) }
+    fs.unlink(uploaded, function (err) {
+      if (err) { return dofile(err) }
+      console.log('deleted ' + archive + ' and ' + uploaded)
+      dofile()
     })
   })
 }
