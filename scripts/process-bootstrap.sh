@@ -42,14 +42,11 @@ cd
 # permissions
 sudo chmod 777 /mnt1
 
-echo "Exporting TMPDIR, GDAL_DATA, and LD_LIBRARY_PATH."
-echo "If you didn't source this script, you'll need to do that yourself!"
-echo "export GDAL_DATA=/usr/local/share/gdal"
-echo "export LD_LIBRARY_PATH=/usr/local/lib"
-echo "export TMPDIR=/mnt1"
-export GDAL_DATA=/usr/local/share/gdal
-export LD_LIBRARY_PATH=/usr/local/lib
-export TMPDIR=/mnt1
+echo "export GDAL_DATA=/usr/local/share/gdal" > set_paths.sh
+echo "export LD_LIBRARY_PATH=/usr/local/lib" >> set_paths.sh
+echo "export TMPDIR=/mnt1" >> set_paths.sh
+
+source set_paths.sh
 
 echo "Ready to go!"
-echo "parallel --bar python2.7 \"process.py -o s3://world-pop/geojson\" < TIF_FILE_LIST.txt "
+

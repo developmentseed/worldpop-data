@@ -1,9 +1,11 @@
 import os
+from subprocess import call
 import re
 import errno
 import urllib
 import argparse
 import traceback
+import tempfile
 from tempfile import mkstemp
 from urlparse import urlparse
 import numpy as np
@@ -93,8 +95,10 @@ def ppp_to_pph(f, scale):
         new_band[y, :] = band[y, :] * (area / 10000.0)
 
     new_band = ma.masked_array(new_band, mask=(band == meta['nodata']))
+    meta['nodata'] = -1
     new_band = new_band.filled(meta['nodata']).astype(rasterio.float32)
 
+    print('finished ppp_to_pph', meta)
     return dict(band=new_band,
                 meta=meta,
                 affine=dst_transform)
@@ -108,7 +112,7 @@ def normalize(job):
         job.update(ppp_to_pph(image_uri, 10000))
         os.remove(image_uri)
 
-    print('normalized', job)
+    print('normalized!')
     return job
 
 
@@ -137,7 +141,7 @@ def polygonize(dst_filename, dst_layername, dst_fieldname, src_filename):
         srs = osr.SpatialReference()
         srs.ImportFromWkt(src_ds.GetProjectionRef())
 
-    drv = ogr.GetDriverByName('GeoJSON')
+    drv = ogr.GetDriverByName('ESRI Shapefile')
     dst_ds = drv.CreateDataSource(dst_filename)
 
     dst_layer = dst_ds.CreateLayer(dst_layername, srs=srs)
@@ -184,11 +188,11 @@ def download_and_unzip(uri):
     if not parsed.scheme:
         result_path = uri
         if not gzipped:
-            (_, filecopy) = os.path.basename(result_path)
+            suffix = os.path.basename(result_path)
+            (_, filecopy) = mkstemp(suffix=suffix[suffix.index('.'):])
             with open(result_path, 'rb') as fin, \
                     open(filecopy, 'wb') as fout:
                 shutil.copyfileobj(fin, fout)
-            os.remove(result_path)
             return filecopy
     else:
         suffix = os.path.basename(parsed.path)
@@ -207,12 +211,11 @@ def download_and_unzip(uri):
 
     if gzipped:
         suffix = os.path.basename(result_path)
-        suffix = suffix[suffix.index('.'):-3]
+        suffix = os.path.splitext(suffix)[0]
         (_, unzipped) = mkstemp(suffix=suffix)
         with gzip.open(result_path, 'rb') as z, \
                 open(unzipped, 'wb') as uz:
             shutil.copyfileobj(z, uz)
-        os.remove(result_path)
         result_path = unzipped
 
     return result_path
@@ -245,7 +248,7 @@ def write_bytes_to_target(target_uri, contents):
 
 def make_polygons(job):
     basename = get_filename(job['image_uri'])
-    dest_uri = os.path.join(job['output'], basename + '.geojson')
+    dest_uri = os.path.join(job['output'], basename + '.geojson.gz')
 
     if 'band' in job:
         (_, tmp_tiff) = mkstemp(suffix='.tif', prefix=basename)
@@ -263,16 +266,20 @@ def make_polygons(job):
     else:
         image_file = download_and_unzip(job['image_uri'])
 
-    tmp_geojson = tmp_tiff.replace('tif', 'geojson')
-    polygonize(tmp_geojson, 'population', 'density_pph', image_file)
+    tmp_shape = image_file.replace('tif', 'shp')
+    tmp_geojson = tmp_shape.replace('shp', 'geojson')
+    tmp_geojson_gz = tmp_geojson + '.gz'
+
+    polygonize(tmp_shape, 'population', 'densitypph', image_file)
+
+    call(['ogr2ogr', '-f', 'GeoJSON', tmp_geojson, tmp_shape])
+
     with open(tmp_geojson, 'rb') as f_in, \
-            gzip.open(tmp_geojson + '.gz', 'wb') as f_out:
+            gzip.open(tmp_geojson_gz, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-    with open(tmp_geojson + '.gz', 'rb') as f:
+
+    with open(tmp_geojson_gz, 'rb') as f:
         write_bytes_to_target(dest_uri, f.read())
-    os.remove(image_file)
-    os.remove(tmp_geojson)
-    os.remove(tmp_geojson + '.gz')
 
 
 def run_jobs(request):
@@ -282,8 +289,20 @@ def run_jobs(request):
     data = request.data
     output = request.output
 
+    base_tempdir = tempfile.gettempdir()
+    print('base tempdir', base_tempdir)
     for im in data:
         try:
+            code = re.search('[A-Z]{3}', im).group(0)
+            print('Processing', code)
+            count = 0
+            tmpdir = os.path.join(base_tempdir, code)
+            while count < 100 and os.path.exists(tmpdir):
+                count += 1
+                tmpdir = os.path.join(base_tempdir, code + str(count))
+            os.makedirs(tmpdir)
+
+            tempfile.tempdir = tmpdir
             job = dict(image_uri=im, output=output)
             make_polygons(normalize(job))
         except (KeyboardInterrupt, SystemExit):
@@ -292,6 +311,11 @@ def run_jobs(request):
             err = traceback.format_exc()
             print('Error processing: ' + im)
             print('\t' + err.replace('\n', '\n\t'))
+        finally:
+            if tempfile.tempdir != base_tempdir:
+                print('Cleaning up', code, tempfile.tempdir)
+                shutil.rmtree(tempfile.tempdir)
+                tempfile.tempdir = base_tempdir
 
     print "Done."
 
