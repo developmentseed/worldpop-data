@@ -1,0 +1,1 @@
+tippecanoe -z 11 -Z 11 -b 0 -ps -ac -ar -ao -l worldpop -o worldpop.mbtiles
