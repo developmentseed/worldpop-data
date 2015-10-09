@@ -7,44 +7,28 @@ containing polygons of constant population density.
 Original data available at [worldpop.org.uk](http://www.worldpop.org.uk/).
 
 ## Prerequisites:
- - GDAL
- - GNU Parallel
- - Postgres and PostGIS
+ - [GDAL](http://www.gdal.org/)
+ - Python modules: `pip install rasterio boto3`
+ - vt-grid: `npm install -g vt-grid`
 
-## Workflow:
+## From GeoTIFFs to GeoJSON:
 
-Assuming you've put the specific TIF (and associated metadata) files you want
-into `data/`, do the following from the root of this repo:
-
-```bash
-mkdir temp
-mkdir shapes
-mkdir tiles
-
-ls data/*.tif | parallel scripts/vectorize.sh {} 1 density shapes
-
-scripts/setup-pg.sh
-ls shapes/*.shp | scripts/merge.sh population
-ls shapes/coverage/*.shp | scripts/merge.sh coverage
+```sh
+python scripts/process.py -o OUTPUT_PREFIX INPUT1 [INPUT2 INPUT3 INPUT4 ...]
 ```
 
-**NOTE:** The `vectorize` loop above assumes that all of the tif files have
-data in the same units - ideally, people per hectare.  However, for some
-countries, the older WorldPop datasets that are available only have people per
-*pixel*.  My suggestion is to assess the size of a pixel in those cases, and
-then change the second parameter to `vectorize.sh` (`1` above) to the
-appropriate scale factor.
+`INPUT1`, etc. are locations of input GeoTIFF images, again either local or on
+s3. Paths ending in `.gz` will be unzipped
 
-Alternatively, you can do this in one fell swoop with:
+`OUTPUT_PREFIX` is either a local directory or an s3 uri like `s3://bucket/folder/blah`.
+Resulting geojson will go here, gzipped, one per input file.
 
-```bash
-scripts/run.sh your_data/*.tif
-```
+(Note: you can make this quite a bit faster using GNU Parallel.)
 
-## Make Tiles
+## From GeoJSON to vector tiles
 
-At this point, the data is in the `worldpop` postgres database.  Open up
-`pg-source.tm2source` in Mapbox Studio, modify the postgres username
-in both the `population` and `coverage` layers, and you should be good to go.
-You can now upload the tiles to Mapbox or export an `mbtiles` file.
+1. Get all the GeoJSON files somewhere that you can pipe them through `gunzip` (or just unzip em all if you have plenty of space).
+2. Cut the raw data into (high zoom) tiles: `cat /path/to/geojson/*.geojson.gz | gunzip | tippecanoe -z 11 -Z 11 -b 0 -l population -o worldpop-base.mbtiles`
+3. Aggregate: `vt-grid worldpop-base.mbtiles worldpop.mbtiles --gridsize 1024 --aggregations 'population:areaWeightedMean(densitypph)'`
+4. Upload `worldpop.mbtiles` to Mapbox (or wherever you can host/serve it), and Bob's your uncle.
 

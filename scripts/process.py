@@ -11,6 +11,7 @@ from urlparse import urlparse
 import numpy as np
 import numpy.ma as ma
 import rasterio
+import rasterio.crs
 from math import sin, fabs, radians
 import boto3
 import gzip
@@ -43,19 +44,15 @@ def dest_affine(affine, src_crs, shape):
 # returns area in square meters
 def ringArea(coords):
     a = 0
-
     if len(coords) > 2:
         p1 = None
         p2 = None
-
         for i in range(0, len(coords) - 1):
             p1 = coords[i]
             p2 = coords[i + 1]
             a += radians(p2[0] - p1[0]) * (2 + sin(radians(p1[1])) +
                                            sin(radians(p2[1])))
-
         a = a * wgs_r2 / 2
-
     return fabs(a)
 
 
@@ -69,11 +66,14 @@ def ppp_to_pph(f, scale):
         affine = src.affine
         meta = src.meta
 
-    unknown_crs = not (crs and 'init' in crs)
-    if unknown_crs:
+    known_crs = crs and rasterio.crs.is_valid_crs(crs)
+    if not known_crs:
         print('Warning: unknown crs for '+f+'; assuming 4326')
 
-    if (not unknown_crs and crs['init'] != 'epsg:4326'):
+    is_4326 = crs and 'init' in crs and crs['init'] == 'epsg:4326'
+
+    if (known_crs and not is_4326):
+        print('reprojecting from', crs)
         dst_transform = dest_affine(affine, crs, shape)
         new_band = np.zeros_like(band)
         reproject(band, new_band, src_transform=affine, src_crs=crs,
@@ -91,7 +91,9 @@ def ppp_to_pph(f, scale):
                    (0, y + 1),
                    (0, y)]
         corners = [affine * p for p in corners]
+        print('corners', corners)
         area = ringArea(corners)
+        print('area', area)
         new_band[y, :] = band[y, :] * (area / 10000.0)
 
     new_band = ma.masked_array(new_band, mask=(band == meta['nodata']))
@@ -107,10 +109,9 @@ def ppp_to_pph(f, scale):
 def normalize(job):
     print('normalize', job)
     image_uri = job['image_uri']
-    if not re.match('pph', image_uri):
+    if not re.search('pph', image_uri):
         image_uri = download_and_unzip(image_uri)
         job.update(ppp_to_pph(image_uri, 10000))
-        os.remove(image_uri)
 
     print('normalized!')
     return job
@@ -134,8 +135,6 @@ def polygonize(dst_filename, dst_layername, dst_fieldname, src_filename):
     if src_ds is None:
         raise Exception('Unable to open %s' % src_filename)
 
-    maskband = None
-
     srs = None
     if src_ds.GetProjectionRef() != '':
         srs = osr.SpatialReference()
@@ -150,6 +149,7 @@ def polygonize(dst_filename, dst_layername, dst_fieldname, src_filename):
     dst_field = 0
 
     srcband = src_ds.GetRasterBand(1)
+    maskband = srcband.GetMaskBand()
     prog_func = gdal.TermProgress
 
     options = []
@@ -251,7 +251,7 @@ def make_polygons(job):
     dest_uri = os.path.join(job['output'], basename + '.geojson.gz')
 
     if 'band' in job:
-        (_, tmp_tiff) = mkstemp(suffix='.tif', prefix=basename)
+        (_, tmp_tiff) = mkstemp(suffix='.pph.tif', prefix=basename)
         with rasterio.open(tmp_tiff,
                            mode='w', driver='GTiff',
                            width=job['band'].shape[1],
@@ -272,8 +272,16 @@ def make_polygons(job):
 
     polygonize(tmp_shape, 'population', 'densitypph', image_file)
 
-    call(['ogr2ogr', '-f', 'GeoJSON', tmp_geojson, tmp_shape])
+    print('converting to geojson')
+    call(['ogr2ogr',
+          '-f',
+          'GeoJSON',
+          '-t_srs',
+          'epsg:4326',
+          tmp_geojson,
+          tmp_shape])
 
+    print('zipping')
     with open(tmp_geojson, 'rb') as f_in, \
             gzip.open(tmp_geojson_gz, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
